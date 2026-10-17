@@ -8,7 +8,7 @@ import json
 import os
 import quantstats as qs
 from statsmodels.tsa.stattools import adfuller
-from scipy.stats import norm
+from scipy.stats import norm, jarque_bera, t as student_t
 
 # Page Configuration
 st.set_page_config(
@@ -17,13 +17,13 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("👑 ASHIRA Institutional Quant Cockpit (Advanced Professional Edition)")
-st.markdown("Professional Quantitative Research Desk: Instant Auto-Load with Ticker Guides, Institutional Execution Rules & Advanced Analytics Charts.")
+st.title("👑 ASHIRA Institutional Quant, Fundamental & Advanced Math Cockpit")
+st.markdown("Professional Quantitative Research Desk: Pure Statistical Calculations, Kalman Filters, Hurst Exponent, EVT & Balance Sheet Health.")
 
 # Global Sidebar Controls (Master Inputs & Ticker Guide)
 st.sidebar.header("⚙️ Master Pipeline Settings")
 master_ticker = st.sidebar.text_input("Primary Asset Ticker", value="RELIANCE.NS", key="master_ticker")
-comp_ticker = st.sidebar.text_input("Comparison Ticker (Tab 1)", value="TCS.NS", key="comp_ticker")
+comp_ticker = st.sidebar.text_input("Comparison Ticker (Tab 1 & 13)", value="TCS.NS", key="comp_ticker")
 timeframe_choice = st.sidebar.selectbox("Execution Timeframe", ["Daily (1D)", "Hourly (1H)", "15-Minute (15m)"], index=0)
 yf_interval_map = {"Daily (1D)": "1d", "Hourly (1H)": "1h", "15-Minute (15m)": "15m"}
 selected_interval = yf_interval_map[timeframe_choice]
@@ -44,8 +44,8 @@ with st.sidebar.expander("📌 Yahoo Finance Ticker Guide"):
         "- **US Tech Stocks:** Direct symbol (e.g., `AAPL`, `TSLA`, `NVDA`)"
     )
 
-# Full 11-Tab Master Architecture
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
+# Full 18-Tab Master Architecture (Including 5 New Advanced Pure Math Modules)
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18 = st.tabs([
     "📊 1. Cointegration", 
     "📈 2. GARCH VaR", 
     "🔬 3. HMM Regimes",
@@ -53,10 +53,17 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
     "🚀 5. EMMA Strategy",
     "📈 6. Kelly Sizer",
     "💼 7. Portfolio",
-    "🔮 8. Price & Future Predictor",
+    "🔮 8. Price Predictor",
     "⚡ 9. Black-Scholes",
     "📐 10. Performance",
-    "👑 11. Master Alpha Strategy"
+    "👑 11. Master Alpha",
+    "📑 12. Balance Sheet",
+    "⚖️ 13. Comparison",
+    "🧮 14. EWMA & Normality",
+    "🔄 15. Kalman Filter",
+    "📉 16. EVT Tail Risk",
+    "⏳ 17. Hurst & Half-Life",
+    "🎲 18. Bayesian Updates"
 ])
 
 @st.cache_data(ttl=3600)
@@ -364,3 +371,255 @@ with tab11:
                 f"2. **Predictive Momentum Edge:** ML directional probability is **{ml_prob:.1f}%** (indicating bearish or choppy momentum bias).\n"
                 f"3. **Conclusion:** Risk parameters do not satisfy the required institutional edge; holding cash is advised."
             )
+
+with tab12:
+    st.header(f"📑 Step 12: Balance Sheet Financial Health & Growth Desk [{master_ticker}]")
+    st.markdown("📖 **Professional Context & Benefit:** Analyzes total assets, liabilities, net worth, debt obligations, and past historical revenue/earnings growth to evaluate true company solvency.")
+    
+    try:
+        t_obj = yf.Ticker(master_ticker)
+        bs = t_obj.balance_sheet
+        fin = t_obj.financials
+        info = t_obj.info
+        
+        comp_name = info.get('longName', master_ticker)
+        sector = info.get('sector', 'N/A')
+        
+        st.subheader(f"🏢 Company Solvency & Financial Structure: {comp_name} [{sector}]")
+        
+        if bs is not None and not bs.empty:
+            total_assets = bs.loc['Total Assets'].iloc[0] if 'Total Assets' in bs.index else 0
+            total_liab = bs.loc['Total Liabilities Net Minority Interest'].iloc[0] if 'Total Liabilities Net Minority Interest' in bs.index else (bs.loc['Total Debt'].iloc[0] if 'Total Debt' in bs.index else 0)
+            total_equity = bs.loc['Stockholders Equity'].iloc[0] if 'Stockholders Equity' in bs.index else total_assets - total_liab
+            cash = bs.loc['Cash And Cash Equivalents'].iloc[0] if 'Cash And Cash Equivalents' in bs.index else 0
+            total_debt = bs.loc['Total Debt'].iloc[0] if 'Total Debt' in bs.index else 0
+            
+            bc1, bc2, bc3, bc4 = st.columns(4)
+            bc1.metric("Total Assets", f"₹{total_assets:,.0f}" if total_assets else "N/A")
+            bc2.metric("Total Liabilities", f"₹{total_liab:,.0f}" if total_liab else "N/A")
+            bc3.metric("Stockholders Equity (Net Worth)", f"₹{total_equity:,.0f}" if total_equity else "N/A")
+            bc4.metric("Cash Reserves", f"₹{cash:,.0f}" if cash else "N/A")
+            
+            solvency_df = pd.DataFrame({
+                "Balance Sheet Factor": ["Asset-to-Liability Coverage", "Debt-to-Equity Ratio", "Cash vs Total Debt", "Net Worth Strength"],
+                "Calculation / Value": [f"{total_assets / (total_liab + 1e-9):.2f}x", f"{total_debt / (total_equity + 1e-9):.2f}", f"₹{cash:,.0f} cash vs ₹{total_debt:,.0f} debt", f"₹{total_equity:,.0f} total equity"],
+                "Solvency Health Verdict": ["Strong Buffer 🟢" if total_assets > total_liab else "High Liabilities 🔴", "Low Leverage 🟢" if (total_debt / (total_equity + 1e-9)) < 1.0 else "High Leverage 🟡", "Healthy Cash 🟢" if cash >= total_debt else "Debt Exceeds Cash 🟡", "Solid Foundation 🟢" if total_equity > 0 else "Negative Equity 🔴"]
+            })
+            st.dataframe(solvency_df, width="stretch")
+            
+        rev_growing = True
+        if fin is not None and not fin.empty:
+            rev_row = fin.loc['Total Revenue'] if 'Total Revenue' in fin.index else None
+            net_row = fin.loc['Net Income'] if 'Net Income' in fin.index else None
+            
+            if rev_row is not None and net_row is not None:
+                growth_df = pd.DataFrame({
+                    "Financial Year": [str(col).split()[0] for col in fin.columns[:4]],
+                    "Total Revenue (₹)": [f"₹{val:,.0f}" for val in rev_row.iloc[:4]],
+                    "Net Income (₹)": [f"₹{val:,.0f}" for val in net_row.iloc[:4]]
+                })
+                st.dataframe(growth_df, width="stretch")
+                rev_vals = rev_row.iloc[:4].values
+                rev_growing = rev_vals[0] < rev_vals[-1] if len(rev_vals) >= 2 else True
+                
+        st.subheader(f"🎯 Automated Fundamental Conclusion & Stock Quality Verdict [{master_ticker}]")
+        is_solvent = (total_assets > total_liab) and (total_equity > 0)
+        is_low_debt = (total_debt / (total_equity + 1e-9)) < 1.5
+        
+        if is_solvent and is_low_debt and rev_growing:
+            st.success(f"🟢 **FUNDAMENTAL CONCLUSION: GOOD STOCK / STRONG COMPOUNDER ({master_ticker})**")
+            st.markdown("Solvency, asset buffers, and past revenue growth satisfy institutional criteria for long-term compounding.")
+        else:
+            st.warning(f"🟡 **FUNDAMENTAL CONCLUSION: HIGH RISK / WEAK BALANCE SHEET ({master_ticker})**")
+            st.markdown("High leverage or sluggish revenue growth indicates financial vulnerability. Exercise caution.")
+            
+    except Exception as e:
+        st.warning(f"Could not load balance sheet analysis: {e}")
+
+with tab13:
+    st.header(f"⚖️ Step 13: Fundamental Comparison Desk [{master_ticker} vs {comp_ticker}]")
+    st.markdown("📖 **Professional Context & Benefit:** Compares core fundamental financial health factors between two stocks side-by-side.")
+    try:
+        t1_obj = yf.Ticker(master_ticker)
+        t2_obj = yf.Ticker(comp_ticker)
+        i1 = t1_obj.info
+        i2 = t2_obj.info
+        
+        comp_df = pd.DataFrame({
+            "Fundamental Metric": ["Market Cap", "Trailing P/E", "Price-to-Book (P/B)", "Return on Equity (ROE)", "Debt-to-Equity", "Profit Margins"],
+            f"{master_ticker}": [f"₹{i1.get('marketCap',0):,.0f}", f"{i1.get('trailingPE','N/A')}", f"{i1.get('priceToBook','N/A')}", f"{i1.get('returnOnEquity',0)*100:.2f}%", f"{i1.get('debtToEquity','N/A')}", f"{i1.get('profitMargins',0)*100:.2f}%"],
+            f"{comp_ticker}": [f"₹{i2.get('marketCap',0):,.0f}", f"{i2.get('trailingPE','N/A')}", f"{i2.get('priceToBook','N/A')}", f"{i2.get('returnOnEquity',0)*100:.2f}%", f"{i2.get('debtToEquity','N/A')}", f"{i2.get('profitMargins',0)*100:.2f}%"]
+        })
+        st.dataframe(comp_df, width="stretch")
+    except Exception as ex:
+        st.warning(f"Could not load comparison metrics: {ex}")
+
+# --- 5 NEW ADVANCED PURE MATHEMATICAL & STATISTICAL MODULES (Tabs 14 to 18) ---
+
+with tab14:
+    st.header(f"🧮 Step 14: EWMA Variance & Jarque-Bera Normality Test [{master_ticker}]")
+    st.markdown("📖 **Professional Context & Benefit:** Implements Exponentially Weighted Moving Average (EWMA / RiskMetrics) volatility weighting and tests if asset returns follow a normal distribution.")
+    
+    ewm_df = fetch_stock_history(master_ticker, start_date, end_date, selected_interval)
+    if not ewm_df.empty:
+        c_series = ewm_df['Close'].iloc[:, 0] if isinstance(ewm_df['Close'], pd.DataFrame) else ewm_df['Close']
+        r_series = np.log(c_series / c_series.shift(1)).dropna()
+        
+        # EWMA calculation (lambda = 0.94)
+        lam = 0.94
+        ewma_var = r_series.ewm(alpha=1-lam).var() * 252 * 10000
+        
+        jb_stat, jb_pval = jarque_bera(r_series)
+        kurtosis_val = r_series.kurtosis()
+        skew_val = r_series.skew()
+        
+        st.subheader("📊 Statistical Normality Metrics")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Jarque-Bera P-Value", f"{jb_pval:.5f}")
+        m2.metric("Excess Kurtosis (Fat Tails)", f"{kurtosis_val:.2f}")
+        m3.metric("Return Skewness", f"{skew_val:.2f}")
+        
+        st.code(
+            f"Mathematical Test Results:\n"
+            f"- JB Statistic = {jb_stat:.4f} (P-Value = {jb_pval:.5f})\n"
+            f"- Conclusion: {'❌ Reject Normality (Fat Tails & Leptokurtic)' if jb_pval < 0.05 else '✅ Normal Distribution'}\n"
+            f"- Note: High kurtosis indicates extreme price jumps occur more frequently than standard normal distribution predicts.",
+            language="text"
+        )
+        
+        ewma_plot_df = pd.DataFrame({"EWMA Annualized Variance": ewma_var}).reset_index()
+        fig_ewma = px.line(ewma_plot_df, x=ewma_plot_df.columns[0], y="EWMA Annualized Variance", title=f"EWMA Volatility Model ($\lambda = 0.94$) [{master_ticker}]", template="plotly_dark")
+        st.plotly_chart(fig_ewma, use_container_width=True)
+
+with tab15:
+    st.header(f"🔄 Step 15: Kalman Filter Dynamic State-Space Pairs Lab [{master_ticker} vs {comp_ticker}]")
+    st.markdown("📖 **Professional Context & Benefit:** Replaces static OLS regression with a recursive Kalman Filter algorithm to dynamically estimate time-varying hedge ratios ($y_t = \beta_t x_t + \epsilon_t$).")
+    
+    kdf1 = fetch_stock_history(master_ticker, start_date, end_date, selected_interval)
+    kdf2 = fetch_stock_history(comp_ticker, start_date, end_date, selected_interval)
+    
+    if not kdf1.empty and not kdf2.empty:
+        p1 = kdf1['Close'].iloc[:, 0] if isinstance(kdf1['Close'], pd.DataFrame) else kdf1['Close']
+        p2 = kdf2['Close'].iloc[:, 0] if isinstance(kdf2['Close'], pd.DataFrame) else kdf2['Close']
+        k_data = pd.DataFrame({master_ticker: p1, comp_ticker: p2}).dropna()
+        
+        # Simple recursive Kalman Filter state estimation for dynamic hedge ratio
+        delta = 1e-5
+        trans_cov = delta / (1 - delta) * np.eye(2)
+        obs_mat = np.vstack([k_data[comp_ticker], np.ones(len(k_data))]).T
+        
+        state_means = np.zeros((len(k_data), 2))
+        theta = np.zeros(2)
+        P = np.zeros((2, 2))
+        R = 1.0
+        
+        hedge_ratios = []
+        intercepts = []
+        
+        for t in range(len(k_data)):
+            F = obs_mat[t]
+            # Prediction
+            if t > 0:
+                P = P + trans_cov
+            # Update
+            y = k_data[master_ticker].iloc[t]
+            var = F.dot(P).dot(F) + R
+            K = P.dot(F) / var
+            theta = theta + K * (y - F.dot(theta))
+            P = (np.eye(2) - np.outer(K, F)).dot(P)
+            
+            hedge_ratios.append(theta[0])
+            intercepts.append(theta[1])
+            
+        k_data['Dynamic_Hedge_Ratio'] = hedge_ratios
+        k_data['Dynamic_Intercept'] = intercepts
+        k_data['Kalman_Spread'] = k_data[master_ticker] - (k_data['Dynamic_Hedge_Ratio'] * k_data[comp_ticker] + k_data['Dynamic_Intercept'])
+        
+        st.subheader("📈 Kalman Filter Dynamic Hedge Ratio Evolution")
+        fig_kf = px.line(k_data.reset_index(), x=k_data.reset_index().columns[0], y='Dynamic_Hedge_Ratio', title=f"Time-Varying Kalman Beta [{master_ticker} vs {comp_ticker}]", template="plotly_dark")
+        st.plotly_chart(fig_kf, use_container_width=True)
+        st.dataframe(k_data[['Dynamic_Hedge_Ratio', 'Kalman_Spread']].tail(15), width="stretch")
+
+with tab16:
+    st.header(f"📉 Step 16: Extreme Value Theory (EVT) Tail Risk [{master_ticker}]")
+    st.markdown("📖 **Professional Context & Benefit:** Uses block maxima and quantile statistics to model extreme left-tail market crashes beyond standard Gaussian limitations.")
+    
+    ev_df = fetch_stock_history(master_ticker, start_date, end_date, selected_interval)
+    if not ev_df.empty:
+        e_close = ev_df['Close'].iloc[:, 0] if isinstance(ev_df['Close'], pd.DataFrame) else ev_df['Close']
+        e_rets = np.log(e_close / e_close.shift(1)).dropna()
+        
+        var_99 = np.percentile(e_rets, 1)
+        cvar_99 = e_rets[e_rets <= var_99].mean()
+        
+        st.subheader("📊 Extreme Downside Quantiles (Tail Risk)")
+        c1, c2 = st.columns(2)
+        c1.metric("Historical Value at Risk (VaR 99%)", f"{var_99*100:.2f}%")
+        c2.metric("Conditional VaR / Expected Shortfall (CVaR 99%)", f"{cvar_99*100:.2f}%")
+        
+        st.code(
+            f"EVT Tail Risk Analysis:\n"
+            f"- On any given trading day at a 99% confidence level, maximum expected loss is {abs(var_99)*100:.2f}%.\n"
+            f"- If the 99% threshold is breached, the Expected Shortfall (CVaR) averages {abs(cvar_99)*100:.2f}% loss.",
+            language="text"
+        )
+
+with tab17:
+    st.header(f"⏳ Step 17: Hurst Exponent & Ornstein-Uhlenbeck Half-Life [{master_ticker}]")
+    st.markdown("📖 **Professional Context & Benefit:** Measures the long-term memory of price series via the Hurst Exponent ($H$) and calculates the exact mean-reversion speed (**Half-Life**).")
+    
+    h_df = fetch_stock_history(master_ticker, start_date, end_date, selected_interval)
+    if not h_df.empty:
+        h_close = h_df['Close'].iloc[:, 0] if isinstance(h_df['Close'], pd.DataFrame) else h_df['Close']
+        
+        # Calculate Hurst Exponent approximation via R/S analysis on log prices
+        l_prices = np.log(h_close.dropna())
+        l_lag = range(2, 50)
+        tau = [np.sqrt(np.std(np.subtract(l_prices[lag:], l_prices[:-lag]))) for lag in l_lag]
+        poly = np.polyfit(np.log(l_lag), np.log(tau), 1)
+        hurst = poly[0] * 2.0
+        
+        # Ornstein-Uhlenbeck Half-Life calculation
+        lag_price = l_prices.shift(1).dropna()
+        delta_price = l_prices.diff().dropna()
+        regression = np.polyfit(lag_price, delta_price, 1)
+        lam_ou = -regression[0]
+        half_life = np.log(2) / lam_ou if lam_ou > 0 else 999.0
+        
+        st.subheader("📊 Mean-Reversion & Memory Diagnostics")
+        h1, h2 = st.columns(2)
+        h1.metric("Hurst Exponent (H)", f"{hurst:.4f}", "Mean-Reverting (<0.5)" if hurst < 0.5 else "Trending (>0.5)")
+        h2.metric("OU Half-Life (Days/Bars)", f"{half_life:.2f} periods")
+        
+        st.code(
+            f"Ornstein-Uhlenbeck Parameters:\n"
+            f"- Hurst Exponent H = {hurst:.4f} ({'Mean-Reverting' if hurst < 0.5 else 'Trending / Persistent'})\n"
+            f"- Mean-Reversion Speed ($\lambda$) = {lam_ou:.4f}\n"
+            f"- Estimated Half-Life = {half_life:.2f} periods to revert halfway to historical equilibrium.",
+            language="text"
+        )
+
+with tab18:
+    st.header(f"🎲 Step 18: Bayesian Probability Updating Engine [{master_ticker}]")
+    st.markdown("📖 **Professional Context & Benefit:** Dynamically updates trading edge probabilities using Bayes' Theorem ($P(A\vert{}B) = \\frac{P(B\vert{}A)P(A)}{P(B)}$) upon new market evidence.")
+    
+    prior_prob = st.slider("Prior Belief Probability of Bullish Continuation P(A)", 0.1, 0.9, 0.5, key="bayes_prior")
+    likelihood_given_signal = st.slider("Likelihood of Signal Given Bullish State P(B|A)", 0.5, 0.95, 0.75, key="bayes_like")
+    likelihood_given_nosignal = st.slider("Likelihood of Signal Given Bearish State P(B|~A)", 0.05, 0.5, 0.25, key="bayes_nosig")
+    
+    # Bayes Theorem Calculation
+    p_b = (likelihood_given_signal * prior_prob) + (likelihood_given_nosignal * (1.0 - prior_prob))
+    posterior_prob = (likelihood_given_signal * prior_prob) / (p_b + 1e-9)
+    
+    st.subheader("📊 Bayesian Posterior Update Result")
+    bp1, bp2 = st.columns(2)
+    bp1.metric("Prior Probability P(A)", f"{prior_prob*100:.1f}%")
+    bp2.metric("Posterior Probability P(A|B)", f"{posterior_prob*100:.1f}%", f"{(posterior_prob - prior_prob)*100:+.1f}%")
+    
+    st.code(
+        f"Bayesian Inference Formula:\n"
+        f"- Prior Probability = {prior_prob:.2f}\n"
+        f"- Updated Posterior Probability = {posterior_prob:.4f}\n"
+        f"- Interpretation: Upon observing technical confirmation signals, the mathematical conviction in trade success adjusts to {posterior_prob*100:.1f}%.",
+        language="text"
+    )

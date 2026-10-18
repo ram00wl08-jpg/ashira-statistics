@@ -3,6 +3,7 @@ pandas
 numpy
 plotly
 yfinance
+quantstats
 statsmodels
 scipy
-quantstats
+scikit-learn
